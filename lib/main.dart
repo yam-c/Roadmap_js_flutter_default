@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,6 +34,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   String? _location;
   late final WebViewController controller;
+  int a = 0; // 메모리 변수
+  int b = 0; // 영속 변수
 
   @override
   void initState() {
@@ -41,6 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..loadRequest(Uri.parse('http://192.168.14.219'));
     _getLocation();
+    _loadB();
   }
 
   Future<void> _getLocation() async {
@@ -73,6 +77,27 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<void> _loadB() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      b = prefs.getInt('b') ?? 0;
+    });
+  }
+
+  void _incA() {
+    setState(() {
+      a++;
+    });
+  }
+
+  Future<void> _incB() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      b++;
+      prefs.setInt('b', b);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,6 +110,33 @@ class _MyHomePageState extends State<MyHomePage> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(_location ?? '위치 정보를 불러오는 중...'),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Column(
+                  children: [
+                    Text('a(메모리): $a'),
+                    ElevatedButton(
+                      onPressed: _incA,
+                      child: const Text('a 증가'),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 32),
+                Column(
+                  children: [
+                    Text('b(영속): $b'),
+                    ElevatedButton(
+                      onPressed: _incB,
+                      child: const Text('b 증가'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           Expanded(
             child: WebViewWidget(controller: controller),
