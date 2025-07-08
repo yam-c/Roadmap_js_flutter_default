@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,6 +39,10 @@ class _MyHomePageState extends State<MyHomePage> {
   int a = 0; // 메모리 변수
   int b = 0; // 영속 변수
 
+  // 1. 알림 객체 생성
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +51,26 @@ class _MyHomePageState extends State<MyHomePage> {
       ..loadRequest(Uri.parse('http://192.168.14.219'));
     _getLocation();
     _loadB();
+    _initNotification();
+    _requestNotificationPermission();
+  }
+
+  Future<void> _initNotification() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  Future<void> _showNotification(String title, String body) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails('your_channel_id', 'your_channel_name',
+            importance: Importance.max, priority: Priority.high);
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+    await flutterLocalNotificationsPlugin.show(
+        0, title, body, platformChannelSpecifics);
   }
 
   Future<void> _getLocation() async {
@@ -88,6 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       a++;
     });
+    _showNotification('a 증가', 'a 값이 $a로 증가했습니다.');
   }
 
   Future<void> _incB() async {
@@ -96,6 +123,13 @@ class _MyHomePageState extends State<MyHomePage> {
       b++;
       prefs.setInt('b', b);
     });
+    _showNotification('b 증가', 'b 값이 $b로 증가했습니다.');
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    if (await Permission.notification.isDenied) {
+      await Permission.notification.request();
+    }
   }
 
   @override
